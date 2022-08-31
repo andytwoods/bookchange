@@ -1,0 +1,135 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Augmented Bookality</title>
+    <link href="css/bootstrap.min.css" rel="stylesheet"
+          integrity="sha384-gH2yIJqKdNHPEq0n4Mqa/HGKIhSkIHeL5AyhkYV8i59U5AR6csBvApHHNl/vI1Bx" crossorigin="anonymous">
+
+</head>
+<style>
+    #drop_zone {
+        border: 5px solid blue;
+        width:  100%;
+        height: 100px;
+        text-align: center;
+    }
+</style>
+<body>
+<h1>Augmented Bookality they'eriser</h1>
+
+<div id="drop_zone" class='d-flex justify-content-center' ondrop="dropHandler(event);" ondragover="dragOverHandler(event)">
+    <p class="align-self-center">Drop an epub file here (many can be found in
+        <a target="_blank" href="https://www.gutenberg.org/">project Gutenberg</a>)</p>
+</div>
+
+<script>
+    function dragOverHandler(ev){
+        ev.preventDefault();
+    }
+    function dropHandler(ev) {
+        console.log('File(s) dropped');
+
+        // Prevent default behavior (Prevent file from being opened)
+        ev.preventDefault();
+
+        if (ev.dataTransfer.items) {
+            // Use DataTransferItemList interface to access the file(s)
+            [...ev.dataTransfer.items].forEach((item, i) => {
+                // If dropped items aren't files, reject them
+                if (item.kind === 'file') {
+                    const file = item.getAsFile();
+                    process_dropped_zip(file);
+                    console.log(`… file[${i}].name = ${file.name}`);
+                }
+            });
+        } else {
+            // Use DataTransfer interface to access the file(s)
+            [...ev.dataTransfer.files].forEach((file, i) => {
+                process_dropped_zip(file);
+                console.log(`… file[${i}].name = ${file.name}`);
+            });
+        }
+    }
+
+    function process_dropped_zip(dropped_zip){
+        var new_zip = new JSZip();
+
+        new_zip.loadAsync(dropped_zip)
+            .then(function(zip) {
+                process_zip_contents(zip)
+            });
+    }
+    function process_zip_contents(zip){
+        var wait_til_done = [];
+        for(const file_nam in zip.files){
+            var file = zip.files[file_nam];
+            if(file_nam.endsWith('html')){
+                wait_til_done.push(file_nam);
+                zip.file(file.name).async("string").then(function (data) {
+                    var modded_text = modify_text(data);
+                    zip.file(file_nam, modded_text);
+                    wait_til_done.splice(wait_til_done.indexOf(file_nam), 1);
+                    console.log(wait_til_done,22)
+                    if(wait_til_done.length===0) generate_zip(zip);
+                });
+            }
+        }
+    }
+
+    function generate_zip(zip){
+        zip.generateAsync({type:"blob"})
+            .then(function (blob) {
+                saveAs(blob, "hello3.epub");
+            });
+    }
+
+    function modify_text(text){
+        // taken from https://github.com/amity/gender-neutralize/blob/master/replacement.js
+        // needs proper attribution
+        text = text.replace(/\b(s)?he was\b/g, "they were");
+        text = text.replace(/\bShe was\b/g, "They were");
+        text = text.replace(/\bHe was\b/g, "They were");
+        text = text.replace(/\b(s)?he has\b/g, "they have");
+        text = text.replace(/\bShe has\b/g, "They have");
+        text = text.replace(/\bHe has\b/g, "They have");
+        text = text.replace(/\bHe's\b/g, "They're");
+        text = text.replace(/\bShe's\b/g, "They're");
+        text = text.replace(/\b(s)?he's/g, "they're");
+        text = text.replace(/\bhe has\b/g, "they have");
+        text = text.replace(/\bHe has\b/g, "They have");
+        text = text.replace(/\bHe is\b/g, "They are");
+        text = text.replace(/\bShe is\b/g, "They are");
+        text = text.replace(/\b(s)?he is\b/g, "they are");
+        text = text.replace(/\b(she )([^ ]+)(s\b)/, "they $2");
+        text = text.replace(/\b(he )([^ ]+)(s\b)/, "they $2");
+        text = text.replace(/\b(She )([^ ]+)(s\b)/, "They $2");
+        text = text.replace(/\b(He )([^ ]+)(s\b)/, "They $2");
+        // Imperfect below -- but "her" as subject / possessive are tough
+        text = text.replace(/\bher$/g, "them");
+        text = text.replace(/ing her\b/g, "ing them");
+        text = text.replace(/\b(s)?he\b/g, "they");
+        text = text.replace(/\b(s)?he\b/g, "they");
+        text = text.replace(/\bHe\b/g, "They");
+        text = text.replace(/\bShe\b/g, "They");
+        text = text.replace(/\bhers\b/g, "theirs");
+        text = text.replace(/\bHers\b/g, "Theirs");
+        text = text.replace(/\bhim\b/g, "them");
+        text = text.replace(/\bHim\b/g, "Them");
+        text = text.replace(/\bHis\b/g, "Their");
+        text = text.replace(/\bhis\b/g, "their");
+        text = text.replace(/\bher\b/g, "their");
+        text = text.replace(/\bHer\b/g, "Their");
+        text = text.replace(/\bhimself\b/g, "themselves");
+        text = text.replace(/\bherself\b/g, "themselves");
+        return text;
+    }
+</script>
+<script src="js/bootstrap.bundle.min.js"
+        integrity="sha384-A3rJD856KowSb7dwlZdYEkO39Gagi7vIsF0jrRAoQmDKKtQBHUuLZ9AsSv4jD4Xa"
+        crossorigin="anonymous"></script>
+<script src="js/jszip.min.js" crossorigin="anonymous"></script>
+<script src="js/FileSaver.min.js" crossorigin="anonymous"></script>
+</body>
+</html>
