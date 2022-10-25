@@ -159,6 +159,17 @@
 
         </div>
     </div>
+
+    <div class="row mt-3">
+        <label>
+            <input id='text-page' type="text" height="200px" width="100%" placeholder="paste text to change...">
+        </label>
+    </div>
+    <script>
+        document.getElementById('text-page').addEventListener("input", function(){
+            this.value = modify_text(this.value);
+        });
+    </script>
 </div>
 
 <script>
